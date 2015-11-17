@@ -121,7 +121,7 @@
         [_pieLayer addSublayer:currentPieLayer];
     }
     
-    [self maskChart];
+//    [self maskChart];
     
     for (int i = 0; i < _items.count; i++) {
         UILabel *descriptionLabel =  [self descriptionLabelForItemAtIndex:i];
