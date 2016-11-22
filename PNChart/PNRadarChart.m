@@ -26,6 +26,7 @@
 - (id)initWithFrame:(CGRect)frame items:(NSArray *)items valueDivider:(CGFloat)unitValue {
     self=[super initWithFrame:frame];
     if (self) {
+        self.maxLength=60.0;
         self.backgroundColor = [UIColor clearColor];
         self.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
 
@@ -80,6 +81,12 @@
     return self;
 }
 
+-(void)updateCenter:(CGPoint)center
+{
+    _centerX=center.x;
+    _centerY=center.y;
+}
+
 #pragma mark - main
 - (void)calculateChartPoints {
     [_pointsToPlotArray removeAllObjects];
@@ -105,14 +112,14 @@
     }else if (_labelStyle==PNRadarChartLabelStyleHorizontal) {
         margin = [self getMaxWidthLabelFromArray:descriptions withFontSize:_fontSize];
     }
-    CGFloat maxLength = ceil(MIN(_centerX, _centerY) - margin);
+    //CGFloat maxLength = ceil(MIN(_centerX, _centerY) - margin);
     int plotCircles = (_maxValue/_valueDivider);
     if (plotCircles > MAXCIRCLE) {
         NSLog(@"Circle number is higher than max");
         plotCircles = MAXCIRCLE;
         _valueDivider = _maxValue/plotCircles;
     }
-    _lengthUnit = maxLength/plotCircles;
+    _lengthUnit = _maxLength/plotCircles;
     NSArray *lengthArray = [self getLengthArrayWithCircleNum:(int)plotCircles];
 
     //get all the points and plot
@@ -129,7 +136,7 @@
             return;
         }
         
-        CGFloat length = valueFloat/_maxValue*maxLength;
+        CGFloat length = valueFloat/_maxValue*_maxLength;
         CGFloat angle = [[angles objectAtIndex:section] floatValue];
         CGFloat x = _centerX +length*cos(angle);
         CGFloat y = _centerY +length*sin(angle);
@@ -138,7 +145,7 @@
         section++;
     }
     //set the labels
-    [self drawLabelWithMaxLength:maxLength labelArray:descriptions angleArray:angles];
+    [self drawLabelWithMaxLength:_maxLength labelArray:descriptions angleArray:angles];
     
  }
 #pragma mark - Draw
@@ -179,7 +186,30 @@
         CGContextStrokePath(graphContext);
     }
     
+    CGContextRef graphContext = UIGraphicsGetCurrentContext();
+    CGContextBeginPath(graphContext);
+    CGPoint point0=[[_pointsToPlotArray objectAtIndex:0] CGPointValue];
+    CGContextSetRGBStrokeColor(context, 1.0, 1.0, 0.0, 1.0);
     
+    CGContextSetLineWidth(context, 3.0);
+    CGMutablePathRef pathRef = CGPathCreateMutable();
+    CGPathMoveToPoint(pathRef, NULL, point0.x, point0.y);
+    for (NSValue *pointValue in _pointsToPlotArray){
+        section++;
+        if (section==1&&_isShowGraduation)continue;
+        
+        CGPoint point = [pointValue CGPointValue];
+        CGPathAddLineToPoint(pathRef, NULL, point.x, point.y);
+    }
+    CGPathAddLineToPoint(pathRef, NULL, point0.x, point0.y);
+    CGPathCloseSubpath(pathRef);
+    
+    CGContextSetFillColorWithColor(context, [UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.5].CGColor);
+    CGContextAddPath(graphContext, pathRef);
+    CGContextFillPath(graphContext);
+    
+    CGContextAddPath(context, pathRef);
+    CGContextStrokePath(context);
 }
 
 - (void)strokeChart {
@@ -252,17 +282,33 @@
         
         switch (_labelStyle) {
             case PNRadarChartLabelStyleCircle:
-                label.frame = CGRectMake(x-5*_fontSize/2, y-_fontSize/2, 5*_fontSize, _fontSize);
+            {
+                CGRect frame = CGRectMake(x-5*_fontSize/2, y-_fontSize/2, 5*_fontSize, _fontSize);
+                if (frame.origin.x<0)
+                {
+                    frame.origin.x=0;
+                }
+                label.frame = frame;
                 label.transform = CGAffineTransformMakeRotation(((float)section/[labelArray count])*(2*M_PI)+M_PI_2);
                 label.textAlignment = NSTextAlignmentCenter;
-                
+            }
                 break;
             case PNRadarChartLabelStyleHorizontal:
                 if (x<_centerX) {
-                    label.frame = CGRectMake(x-detailSize.width, y-detailSize.height/2, detailSize.width, detailSize.height);
+                    CGRect frame =CGRectMake(x-detailSize.width, y-detailSize.height/2, detailSize.width, detailSize.height);
+                    if (frame.origin.x<0)
+                    {
+                        frame.origin.x=0;
+                    }
+                    label.frame = frame;
                     label.textAlignment = NSTextAlignmentRight;
                 }else{
-                    label.frame = CGRectMake(x, y-detailSize.height/2, detailSize.width , detailSize.height);
+                    CGRect frame = CGRectMake(x, y-detailSize.height/2, detailSize.width , detailSize.height);
+                    if (frame.origin.x<0)
+                    {
+                        frame.origin.x=0;
+                    }
+                    label.frame = frame;
                     label.textAlignment = NSTextAlignmentLeft;
                 }
                 break;
@@ -272,6 +318,7 @@
             default:
                 break;
         }
+        label.textColor=_fontColor;
         [label sizeToFit];
         
         label.userInteractionEnabled = YES;

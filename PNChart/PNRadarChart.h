@@ -26,6 +26,9 @@ typedef NS_ENUM(NSUInteger, PNRadarChartLabelStyle) {
  */
 -(void)strokeChart;
 
+-(void)updateCenter:(CGPoint)center;
+
+
 /** Array of `RadarChartDataItem` objects, one for each corner. */
 @property (nonatomic) NSArray *chartData;
 /** The unit of this chart ,default is 1 */
@@ -48,5 +51,6 @@ typedef NS_ENUM(NSUInteger, PNRadarChartLabelStyle) {
 @property (nonatomic, assign) BOOL isLabelTouchable;
 /** is show graduation on the chart ,default is NO. */
 @property (nonatomic, assign) BOOL isShowGraduation;
-
+/** The maximum for the range of values to display on the chart */
+@property (nonatomic) CGFloat maxLength;
 @end
